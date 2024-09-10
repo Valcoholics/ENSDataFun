@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENS SVG Art Generator</title>
+    <style>
+        .ens-svg-text {
+            font-family: Satoshi, 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
+            font-style: normal;
+            font-variant-numeric: tabular-nums;
+            font-weight: bold;
+            font-variant-ligatures: none;
+            font-feature-settings: 'ss01' on, 'ss03' on;
+            line-height: 34px;
+        }
+    </style>
+</head>
+<body>
+    <div id="svg-container"></div>
+    <script>
+        function createENSSVG(options) {
+            const {
+                name,
+                backgroundImage,
+                isNormalised,
+                isSubdomain,
+                subdomainText,
+                domainFontSize
+            } = options;
+
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("viewBox", "0 0 270 270");
+            svg.setAttribute("display", "block");
+            svg.setAttribute("fill", "none");
+
+            // Create background
+            if (backgroundImage) {
+                const defs = document.createElementNS(svgNS, "defs");
+                const pattern = document.createElementNS(svgNS, "pattern");
+                pattern.setAttribute("id", "backImg");
+                pattern.setAttribute("patternUnits", "userSpaceOnUse");
+                pattern.setAttribute("x", "0");
+                pattern.setAttribute("y", "0");
+                pattern.setAttribute("width", "270");
+                pattern.setAttribute("height", "270");
+
+                const image = document.createElementNS(svgNS, "image");
+                image.setAttributeNS("http://www.w3.org/1999/xlink", "href", backgroundImage);
+                image.setAttribute("width", "270");
+                image.setAttribute("height", "270");
+
+                pattern.appendChild(image);
+                defs.appendChild(pattern);
+                svg.appendChild(defs);
+
+                const rect1 = document.createElementNS(svgNS, "rect");
+                rect1.setAttribute("width", "270");
+                rect1.setAttribute("height", "270");
+                rect1.setAttribute("fill", "url(#backImg)");
+                svg.appendChild(rect1);
+
+                const rect2 = document.createElementNS(svgNS, "rect");
+                rect2.setAttribute("width", "270");
+                rect2.setAttribute("height", "270");
+                rect2.setAttribute("fill", "#000");
+                rect2.setAttribute("fill-opacity", "0.12");
+                svg.appendChild(rect2);
+            } else if (isNormalised) {
+                const rect = document.createElementNS(svgNS, "rect");
+                rect.setAttribute("fill", "url(#paint0_linear)");
+                rect.setAttribute("width", "270");
+                rect.setAttribute("height", "270");
+                svg.appendChild(rect);
+            } else {
+                const rect = document.createElementNS(svgNS, "rect");
+                rect.setAttribute("fill", "url(#paint1_linear)");
+                rect.setAttribute("width", "270");
+                rect.setAttribute("height", "270");
+                svg.appendChild(rect);
+            }
+
+            // Add drop shadow filter
+            const defs = document.createElementNS(svgNS, "defs");
+            const filter = document.createElementNS(svgNS, "filter");
+            filter.setAttribute("id", "dropShadow");
+            filter.setAttribute("colorInterpolationFilters", "sRGB");
+            filter.setAttribute("filterUnits", "userSpaceOnUse");
+            filter.setAttribute("height", "270");
+            filter.setAttribute("width", "270");
+
+            const feDropShadow = document.createElementNS(svgNS, "feDropShadow");
+            feDropShadow.setAttribute("dx", "0");
+            feDropShadow.setAttribute("dy", "1");
+            feDropShadow.setAttribute("stdDeviation", "2");
+            feDropShadow.setAttribute("floodOpacity", "0.225");
+            feDropShadow.setAttribute("width", "200%");
+            feDropShadow.setAttribute("height", "200%");
+
+            filter.appendChild(feDropShadow);
+            defs.appendChild(filter);
+            svg.appendChild(defs);
+
+            // Add logo paths
+            const logoPaths = [
+                "M38.0397 51.0875C38.5012 52.0841 39.6435 54.0541 39.6435 54.0541L52.8484 32L39.9608 41.0921C39.1928 41.6096 38.5628 42.3102 38.1263 43.1319C37.5393 44.3716 37.2274 45.7259 37.2125 47.1C37.1975 48.4742 37.4799 49.8351 38.0397 51.0875Z",
+                "M32.152 59.1672C32.3024 61.2771 32.9122 63.3312 33.9405 65.1919C34.9689 67.0527 36.3921 68.6772 38.1147 69.9567L52.8487 80C52.8487 80 43.6303 67.013 35.8549 54.0902C35.0677 52.7249 34.5385 51.2322 34.2926 49.6835C34.1838 48.9822 34.1838 48.2689 34.2926 47.5676C34.0899 47.9348 33.6964 48.6867 33.6964 48.6867C32.908 50.2586 32.371 51.9394 32.1043 53.6705C31.9508 55.5004 31.9668 57.3401 32.152 59.1672Z",
+                "M70.1927 60.9125C69.6928 59.9159 68.4555 57.946 68.4555 57.946L54.1514 80L68.1118 70.9138C68.9436 70.3962 69.6261 69.6956 70.099 68.8739C70.7358 67.6334 71.0741 66.2781 71.0903 64.9029C71.1065 63.5277 70.8001 62.1657 70.1927 60.9125Z",
+                "M74.8512 52.8328C74.7008 50.7229 74.0909 48.6688 73.0624 46.8081C72.0339 44.9473 70.6105 43.3228 68.8876 42.0433L54.1514 32C54.1514 32 63.3652 44.987 71.1478 57.9098C71.933 59.2755 72.4603 60.7682 72.7043 62.3165C72.8132 63.0178 72.8132 63.7311 72.7043 64.4324C72.9071 64.0652 73.3007 63.3133 73.3007 63.3133C74.0892 61.7414 74.6262 60.0606 74.893 58.3295C75.0485 56.4998 75.0345 54.66 74.8512 52.8328Z"
+            ];
+
+            logoPaths.forEach(d => {
+                const path = document.createElementNS(svgNS, "path");
+                path.setAttribute("d", d);
+                path.setAttribute("fill", "white");
+                path.setAttribute("filter", "url(#dropShadow)");
+                svg.appendChild(path);
+            });
+
+            // Add warning sign for non-normalised domains
+            if (!isNormalised) {
+                const warningGroup = document.createElementNS(svgNS, "g");
+                
+                const rect = document.createElementNS(svgNS, "rect");
+                rect.setAttribute("x", "200");
+                rect.setAttribute("y", "34");
+                rect.setAttribute("width", "40");
+                rect.setAttribute("height", "40");
+                rect.setAttribute("rx", "20");
+                rect.setAttribute("fill", "white");
+                rect.setAttribute("fill-opacity", "0.2");
+                warningGroup.appendChild(rect);
+
+                const path = document.createElementNS(svgNS, "path");
+                path.setAttribute("fill-rule", "evenodd");
+                path.setAttribute("clip-rule", "evenodd");
+                path.setAttribute("d", "M217.472 44.4655C218.581 42.5115 221.42 42.5115 222.528 44.4655L230.623 58.7184C231.711 60.6351 230.314 63 228.096 63H211.905C209.686 63 208.289 60.6351 209.377 58.7184L217.472 44.4655ZM221.451 58.6911C221.451 59.0722 221.298 59.4376 221.026 59.7071C220.754 59.9765 220.385 60.1279 220 60.1279C219.615 60.1279 219.246 59.9765 218.974 59.7071C218.702 59.4376 218.549 59.0722 218.549 58.6911C218.549 58.31 218.702 57.9446 218.974 57.6751C219.246 57.4057 219.615 57.2543 220 57.2543C220.385 57.2543 220.754 57.4057 221.026 57.6751C221.298 57.9446 221.451 58.31 221.451 58.6911V58.6911ZM220 47.1968C219.615 47.1968 219.246 47.3482 218.974 47.6177C218.702 47.8871 218.549 48.2526 218.549 48.6336V52.944C218.549 53.325 218.702 53.6905 218.974 53.9599C219.246 54.2294 219.615 54.3807 220 54.3807C220.385 54.3807 220.754 54.2294 221.026 53.9599C221.298 53.6905 221.451 53.325 221.451 52.944V48.6336C221.451 48.2526 221.298 47.8871 221.026 47.6177C220.754 47.3482 220.385 47.1968 220 47.1968Z");
+                path.setAttribute("fill", "white");
+                warningGroup.appendChild(path);
+
+                const text = document.createElementNS(svgNS, "text");
+                text.setAttribute("opacity", "0.6");
+                text.setAttribute("fill", "white");
+                text.setAttribute("x", "36");
+                text.setAttribute("y", "196");
+                text.textContent = "Name not normalised";
+                warningGroup.appendChild(text);
+
+                svg.appendChild(warningGroup);
+            }
+
+            // Add subdomain text if present
+            if (subdomainText) {
+                const text = document.createElementNS(svgNS, "text");
+                text.setAttribute("class", "ens-svg-text");
+                text.setAttribute("x", "32.5");
+                text.setAttribute("y", "201");
+                text.setAttribute("font-size", "36px");
+                text.setAttribute("fill", "white");
+                text.setAttribute("filter", "url(#dropShadow)");
+                text.textContent = subdomainText;
+                svg.appendChild(text);
+            }
+
+            // Add main domain text
+            const domainText = document.createElementNS(svgNS, "text");
+            domainText.setAttribute("class", "ens-svg-text");
+            domainText.setAttribute("x", "32.5");
+            domainText.setAttribute("y", "231");
+            domainText.setAttribute("font-size", `${domainFontSize}px`);
+            domainText.setAttribute("opacity", isSubdomain ? "0.4" : "1");
+            domainText.setAttribute("fill", "white");
+            domainText.setAttribute("filter", "url(#dropShadow)");
+            domainText.textContent = name;
+            svg.appendChild(domainText);
+
+            // Add linear gradients
+            const linearGradient1 = document.createElementNS(svgNS, "linearGradient");
+            linearGradient1.setAttribute("id", "paint0_linear");
+            linearGradient1.setAttribute("x1", "190.5");
+            linearGradient1.setAttribute("y1", "302");
+            linearGradient1.setAttribute("x2", "-64");
+            linearGradient1.setAttribute("y2", "-172.5");
+            linearGradient1.setAttribute("gradientUnits", "userSpaceOnUse");
+
+            const stops1 = [
+                {color: "#44BCF0", offset: "0"},
+                {color: "#628BF3", offset: "0.428185"},
+                {color: "#A099FF", offset: "1"}
+            ];
+
+            stops1.forEach(stop => {
+                const stopElement = document.createElementNS(svgNS, "stop");
+                stopElement.setAttribute("stop-color", stop.color);
+                stopElement.setAttribute("offset", stop.offset);
+                linearGradient1.appendChild(stopElement);
+            });
+
+            const linearGradient2 = document.createElementNS(svgNS, "linearGradient");
+            linearGradient2.setAttribute("id", "paint1_linear");
+            linearGradient2.setAttribute("x1", "0");
+            linearGradient2.setAttribute("y1", "0");
+            linearGradient2.setAttribute("x2", "269.553");
+            linearGradient2.setAttribute("y2", "285.527");
+            linearGradient2.setAttribute("gradientUnits", "userSpaceOnUse");
+
+            const stops2 = [
+                {color: "#EB9E9E", offset: "0"},
+                {color: "#992222", offset: "1"}
+            ];
+
+            stops2.forEach(stop => {
+                const stopElement = document.createElementNS(svgNS, "stop");
+                stopElement.setAttribute("stop-color", stop.color);
+                stopElement.setAttribute("offset", stop.offset);
+                linearGradient2.appendChild(stopElement);
+            });
+
+            defs.appendChild(linearGradient1);
+            defs.appendChild(linearGradient2);
+
+            return svg;
+        }
+
+        // Example usage
+        const options = {
+            name: "example.eth",
+            backgroundImage: null,
+            isNormalised: true,
+            isSubdomain: false,
+            subdomainText: null,
+            domainFontSize: 32
+        };
+
+        const svgElement = createENSSVG(options);
+        document.getElementById("svg-container").appendChild(svgElement
+
+            // Append the SVG to the container
+            container.appendChild(svg);
+        }
+
+        // Call the function with example values
+        createSVG('estmcmxmi.eth', '/src/bckgrnd.png', true);
+    </script>
+</body>
+</html>
